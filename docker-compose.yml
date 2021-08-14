@@ -1,0 +1,50 @@
+version: '3.8'
+services:
+    postgres:
+        image: postgres
+        environment:
+            - POSTGRES_USER=airflow
+            - POSTGRES_PASSWORD=airflow
+            - POSTGRES_DB=airflow
+
+    mongodb:
+         image: mongo
+         ports:
+            - 27027:27017
+
+    scheduler:
+        image: apache/airflow
+        command: scheduler
+        deploy:
+            restart_policy:
+                condition: on-failure
+        depends_on:
+            - postgres
+            - mongodb  
+        env_file:
+            - .env
+        volumes:
+            - ./dags:/opt/airflow/dags
+            - ./logs:/opt/airflow/logs
+            - ./cellar:/opt/airflow/cellar
+            - ./scripts:/opt/airflow/scripts
+    webserver:
+        image: apache/airflow
+        entrypoint: ./scripts/entrypoint.sh
+        deploy:
+            restart_policy:
+                condition: on-failure
+        depends_on:
+            - postgres
+            - mongodb  
+            - scheduler
+        env_file:
+            - .env
+        volumes:
+            - ./dags:/opt/airflow/dags
+            - ./logs:/opt/airflow/logs
+            - ./scripts:/opt/airflow/scripts
+            - ./cellar:/opt/airflow/cellar
+        ports:
+            - "8080:8080"
+
